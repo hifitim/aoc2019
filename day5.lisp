@@ -1,4 +1,4 @@
-(defparameter *input-id* 1)
+(defparameter *input-id* 5)
 (defparameter *logging* nil)
 
 (defun read-input (file-name)
@@ -39,114 +39,281 @@
     (recurse lst 0 0)))
 
 (defun op1 (intcode idx param-mode)
-  (when *logging*
-    (format t "ptr: ~A~%" idx)
-    (format t "instr: ~A~%" (subseq intcode idx (+ idx 4)))
-    (format t "replacing ~A (addr ~A) with ~A [~A (addr: ~A) + ~A (addr: ~A)]~%"
-	    (nth (nth (+ 3 idx) intcode) intcode)
-	    (nth (+ 3 idx) intcode)
-	    (+
-	     (if (= (nth 0 param-mode) 0)
-		 (nth (nth (+ 1 idx) intcode) intcode) ; position mode
-		 (nth (+ 1 idx) intcode)) ;immediate mode
-	     (if (= (nth 1 param-mode) 0)
-		 (nth (nth (+ 2 idx) intcode) intcode) ; position mode
-		 (nth (+ 2 idx) intcode)))
-	    (if (= (nth 0 param-mode) 0)
-		(nth (nth (+ 1 idx) intcode) intcode) ; position mode
-		(nth (+ 1 idx) intcode)) ;immediate mode
-	    (if (= (nth 0 param-mode) 0)
-		(nth (+ 1 idx) intcode)
-		nil)
-	    (if (= (nth 1 param-mode) 0)
-		(nth (nth (+ 2 idx) intcode) intcode) ; position mode
-		(nth (+ 2 idx) intcode))
-	    (if (= (nth 1 param-mode) 0)
-		(nth (+ 2 idx) intcode)
-		nil))
-    (format t "~%"))
-  (replace-at
-   intcode
-   (nth (+ 3 idx) intcode)
-   (+
-    (if (= (nth 0 param-mode) 0)
-	(nth (nth (+ 1 idx) intcode) intcode)
-	(nth (+ 1 idx) intcode))
-    (if (= (nth 1 param-mode) 0)
-	(nth (nth (+ 2 idx) intcode) intcode)
-	(nth (+ 2 idx) intcode)))))
+  (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (+ 1 idx) intcode)
+	     nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (+ 2 idx) intcode)
+	     nil))
+	(arg3
+	 (if (= (nth 2 param-mode) 0)
+	     (nth (nth (+ 3 idx) intcode) intcode)
+	     (nth (+ 3 idx) intcode)))
+	(arg3-addr
+	 (if (= (nth 2 param-mode) 0)
+	     (nth (+ 3 idx) intcode)
+	     nil)))
+    (when *logging*
+      (format t "ptr: ~A~%" idx)
+      (format t "instr: ~A~%" (subseq intcode idx (+ idx 4)))
+      (format t "replacing ~A (addr ~A) with ~A [~A (addr: ~A) * ~A (addr: ~A)]~%"
+	      arg3 
+	      arg3-addr
+	      (+ arg1 arg2)
+	      arg1
+	      arg1-addr
+	      arg2
+	      arg2-addr)
+      (format t "~%"))
+    
+    (replace-at
+     intcode
+     arg3-addr
+     (+ arg1 arg2))))
 
 (defun op2 (intcode idx param-mode)
+  (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+		(nth (+ 1 idx) intcode)
+		nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+		(nth (+ 2 idx) intcode)
+		nil))
+	(arg3
+	 (if (= (nth 2 param-mode) 0)
+	     (nth (nth (+ 3 idx) intcode) intcode)
+	     (nth (+ 3 idx) intcode)))
+	(arg3-addr
+	 (if (= (nth 2 param-mode) 0)
+		(nth (+ 3 idx) intcode)
+		nil)))
   (when *logging*
     (format t "ptr: ~A~%" idx)
     (format t "instr: ~A~%" (subseq intcode idx (+ idx 4)))
     (format t "replacing ~A (addr ~A) with ~A [~A (addr: ~A) * ~A (addr: ~A)]~%"
-	    (nth (nth (+ 3 idx) intcode) intcode)
-	    (nth (+ 3 idx) intcode)
-	    (*
-	     (if (= (nth 0 param-mode) 0)
-		 (nth (nth (+ 1 idx) intcode) intcode) ; position mode
-		 (nth (+ 1 idx) intcode)) ;immediate mode
-	     (if (= (nth 1 param-mode) 0)
-		 (nth (nth (+ 2 idx) intcode) intcode) ; position mode
-		 (nth (+ 2 idx) intcode)))
-	    (if (= (nth 0 param-mode) 0)
-		(nth (nth (+ 1 idx) intcode) intcode) ; position mode
-		(nth (+ 1 idx) intcode)) ;immediate mode
-	    (if (= (nth 0 param-mode) 0)
-		(nth (+ 1 idx) intcode)
-		nil)
-	    (if (= (nth 1 param-mode) 0)
-		(nth (nth (+ 2 idx) intcode) intcode) ; position mode
-		(nth (+ 2 idx) intcode))
-	    (if (= (nth 1 param-mode) 0)
-		(nth (+ 2 idx) intcode)
-		nil))
+	    arg3 
+	    arg3-addr
+	    (* arg1 arg2)
+	    arg1
+	    arg1-addr
+	    arg2
+	    arg2-addr)
     (format t "~%"))
+  
   (replace-at
    intcode
-   (nth (+ 3 idx) intcode)
-   (*
-    (if (= (nth 0 param-mode) 0)
-	(nth (nth (+ 1 idx) intcode) intcode) ; position mode
-	(nth (+ 1 idx) intcode)) ;immediate mode
-    (if (= (nth 1 param-mode) 0)
-	(nth (nth (+ 2 idx) intcode) intcode) ; position mode
-	(nth (+ 2 idx) intcode))))) ;immediate mode
+   arg3-addr
+   (* arg1 arg2))))
 
 (defun op3 (intcode idx)
+  (let ((arg1
+	 (nth (nth (+ 1 idx) intcode) intcode))
+	(arg1-addr
+	 (nth (+ 1 idx) intcode)))
   (when *logging*
     (format t "ptr: ~A~%" idx)
     (format t "instr: ~A~%" (subseq intcode idx (+ idx 2)))
     (format t "input: ~A~%" *input-id*)
     (format t "replacing ~A (addr: ~A) with ~A~%"
-	    (nth (nth (+ 1 idx) intcode) intcode)
-	    (nth (+ 1 idx) intcode)
+	    arg1
+	    arg1-addr
 	    *input-id*)
     (format t "~%"))
   (replace-at
    intcode
-   (nth (+ 1 idx) intcode)
-   *input-id*))
+   arg1-addr
+   *input-id*)))
 
 (defun op4 (intcode idx param-mode)
-  (when *logging*
-    (format t "ptr: ~A~%" idx)
-    (format t "instr: ~A~%" (subseq intcode idx (+ idx 2)))
-    (format t "output ~A at address ~A.~%"
-	    (if (= (car param-mode) 0)
-		(nth (nth (+ 1 idx) intcode) intcode)
-		(nth (+ 1 idx) intcode))
-	    (if (= (car param-mode) 0)
+   (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	 (arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (+ 1 idx) intcode)
+	     nil)))
+     (when *logging*
+       (format t "ptr: ~A~%" idx)
+       (format t "instr: ~A~%" (subseq intcode idx (+ idx 2)))
+       (format t "output ~A at address ~A.~%"
+	       arg1
+	       arg1-addr)
+       (format t "~%"))
+     (format t "opcode 4: ~A~%"
+	     arg1)
+     (when *logging*
+       (format t "~%"))))
+
+(defun op5 (intcode idx param-mode)
+  (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
 		(nth (+ 1 idx) intcode)
 		nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+		(nth (+ 2 idx) intcode)
+		nil)))
+   (when *logging*
+    (format t "ptr: ~A~%" idx)
+    (format t "instr: ~A~%" (subseq intcode idx (+ idx 3)))
+    (if (= arg1 0)
+	(format t "NOT "))
+    (format t "jumping from ~A to ~A (addr: ~A) because ~A (addr: ~A)~%"
+	    idx
+	    arg2
+	    arg2-addr
+	    arg1
+	    arg1-addr)
     (format t "~%"))
-  (format t "opcode 4: ~A~%"
-	  (if (= (car param-mode) 0)
-	      (nth (nth (+ 1 idx) intcode) intcode)
-	      (nth (+ 1 idx) intcode)))
+   (if (not (= arg1 0))
+       arg2
+       (+ idx 3))))
+
+(defun op6 (intcode idx param-mode)
+   (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+		(nth (+ 1 idx) intcode)
+		nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+		(nth (+ 2 idx) intcode)
+		nil)))
+   (when *logging*
+    (format t "ptr: ~A~%" idx)
+    (format t "instr: ~A~%" (subseq intcode idx (+ idx 3)))
+    (if (not (= arg1 0))
+	(format t "NOT "))
+    (format t "jumping from ~A to ~A (addr: ~A) because ~A (addr: ~A) = 0~%"
+	    idx
+	    arg2
+	    arg2-addr
+	    arg1
+	    arg1-addr)
+    (format t "~%"))
+   (if (= arg1 0)
+       arg2
+       (+ idx 3))))
+
+(defun op7 (intcode idx param-mode)
+  (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+		(nth (+ 1 idx) intcode)
+		nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+		(nth (+ 2 idx) intcode)
+		nil))
+	(arg3
+	 (if (= (nth 2 param-mode) 0)
+	     (nth (nth (+ 3 idx) intcode) intcode)
+	     (nth (+ 3 idx) intcode)))
+	(arg3-addr
+	 (if (= (nth 2 param-mode) 0)
+		(nth (+ 3 idx) intcode)
+		nil)))
   (when *logging*
-    (format t "~%")))
+    (format t "ptr: ~A~%" idx)
+    (format t "instr: ~A~%" (subseq intcode idx (+ idx 4)))
+    (format t "replacing ~A (addr ~A) with ~A because ~A (addr: ~A) < ~A (addr: ~A)~%"
+	    arg3 
+	    arg3-addr
+	    (if (< arg1 arg2) 1 0)
+	    arg1
+	    arg1-addr
+	    arg2
+	    arg2-addr)
+    (format t "~%"))
+  (replace-at
+   intcode
+   arg3-addr
+   (if (< arg1 arg2) 1 0))))
+
+(defun op8 (intcode idx param-mode)
+  (let ((arg1
+	 (if (= (nth 0 param-mode) 0)
+	     (nth (nth (+ 1 idx) intcode) intcode)
+	     (nth (+ 1 idx) intcode)))
+	(arg1-addr
+	 (if (= (nth 0 param-mode) 0)
+		(nth (+ 1 idx) intcode)
+		nil))
+	(arg2
+	 (if (= (nth 1 param-mode) 0)
+	     (nth (nth (+ 2 idx) intcode) intcode)
+	     (nth (+ 2 idx) intcode)))
+	(arg2-addr
+	 (if (= (nth 1 param-mode) 0)
+		(nth (+ 2 idx) intcode)
+		nil))
+	(arg3
+	 (if (= (nth 2 param-mode) 0)
+	     (nth (nth (+ 3 idx) intcode) intcode)
+	     (nth (+ 3 idx) intcode)))
+	(arg3-addr
+	 (if (= (nth 2 param-mode) 0)
+		(nth (+ 3 idx) intcode)
+		nil)))
+  (when *logging*
+    (format t "ptr: ~A~%" idx)
+    (format t "instr: ~A~%" (subseq intcode idx (+ idx 4)))
+    (format t "replacing ~A (addr ~A) with ~A because ~A (addr: ~A) = ~A (addr: ~A)~%"
+	    arg3 
+	    arg3-addr
+	    (if (= arg1 arg2) 1 0)
+	    arg1
+	    arg1-addr
+	    arg2
+	    arg2-addr)
+    (format t "~%"))
+  
+      (replace-at
+       intcode
+       arg3-addr
+       (if (= arg1 arg2) 1 0))))
 
 (defun get-opcode (op-param-code)
   (if (= (length (int-to-list op-param-code)) 1)
@@ -175,6 +342,7 @@
 
 (defun parse-intcode (intcode)
   (labels ((parse-recurse (lst idx)
+	     ;;(format t "intcode: ~A~%" lst)
 	     (let* ((op-param-code (nth idx lst))
 		    (opcode (get-opcode op-param-code))
 		    (param-mode (get-param-mode op-param-code)))
@@ -197,7 +365,23 @@
 		  (op4 lst idx param-mode)
 		  (parse-recurse
 		   lst
-		   (+ idx 2)))		   
+		   (+ idx 2)))
+		 ((= opcode 5)
+		  (parse-recurse
+		   lst
+		   (op5 lst idx param-mode)))
+		 ((= opcode 6)
+		  (parse-recurse
+		   lst
+		   (op6 lst idx param-mode)))
+		 ((= opcode 7)		  
+		  (parse-recurse
+		   (op7 lst idx param-mode)
+		   (+ idx 4)))
+		 ((= opcode 8)		  
+		  (parse-recurse
+		   (op8 lst idx param-mode)
+		   (+ idx 4)))
 		 ((= opcode 99)
 		  lst)))))
     (parse-recurse intcode 0)))
