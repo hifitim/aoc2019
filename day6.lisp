@@ -48,25 +48,6 @@
 		  (print-internal (gethash k graph) (+ depth 1))))))
     (print-internal graph 0)))
 
-;; (defun exists-in-graph (item graph)
-;;   (labels
-;;       ((graph-recurse (item keys graph)
-;; 	 (cond
-;; 	   ((and
-;; 	     (null keys)
-;; 	     (> (hash-key-count graph) 0))
-;; 	    (graph-recurse
-;; 	     item
-;; 	     (hash-keys (gethash (car (hash-keys graph)) graph))
-;; 	     (gethash (car (hash-keys graph)) graph)))
-;; 	   ((null keys)
-;; 	    nil)
-;; 	   ((equal item (car keys))
-;; 	    (gethash (car keys) graph))
-;; 	   (t
-;; 	    (graph-recurse item (cdr keys) graph)))))
-;;     (graph-recurse item (hash-keys graph) graph)))
-
 (defun exists-in-graph (item graph)
   (let ((found nil))
     (labels
@@ -91,17 +72,20 @@
 	((build-recurse (input graph)
 	   (cond
 	     ((string-equal (caar input) "COM")
-	      t) ;; special case TBD for first node.
-	     ((exists-in-graph (caar input) graph)
-	      t) ;; not sure what to do yet.
-	     (t ;; doesn't exist in graph
+	      (setf graph (make-hash-table :test #'equal))
+	      (setf (gethash (cdar input) graph) (make-hash-table :test #'equal))
+	      (build-recurse (cdr input) graph))
+	     ((null input)
+	      graph)
+	     (t
+	      (add-to-graph
+	       (cdar input)
+	       (caar input)
+	       graph)
 	      (build-recurse
 	       (cdr input)
-	       (add-to-graph
-		(car input)
-		graph))))))
-      (build-recurse input nil))
-    out-graph))
+	       graph)))))
+	 (build-recurse input out-graph))))
 
 (defun hash-keys (hash-table)
   (loop for key being the hash-keys of hash-table collect key))
