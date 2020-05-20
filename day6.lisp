@@ -48,29 +48,42 @@
 		  (print-internal (gethash k graph) (+ depth 1))))))
     (print-internal graph 0)))
 
+;; (defun exists-in-graph (item graph)
+;;   (labels
+;;       ((graph-recurse (item keys graph)
+;; 	 (cond
+;; 	   ((and
+;; 	     (null keys)
+;; 	     (> (hash-key-count graph) 0))
+;; 	    (graph-recurse
+;; 	     item
+;; 	     (hash-keys (gethash (car (hash-keys graph)) graph))
+;; 	     (gethash (car (hash-keys graph)) graph)))
+;; 	   ((null keys)
+;; 	    nil)
+;; 	   ((equal item (car keys))
+;; 	    (gethash (car keys) graph))
+;; 	   (t
+;; 	    (graph-recurse item (cdr keys) graph)))))
+;;     (graph-recurse item (hash-keys graph) graph)))
+
 (defun exists-in-graph (item graph)
-  (labels
-      ((graph-recurse (item keys graph)
-	 (cond
-	   ((and
-	     (null keys)
-	     (> (hash-key-count graph) 0))
-	    (graph-recurse
-	     item
-	     (hash-keys (gethash (car (hash-keys graph)) graph))
-	     (gethash (car (hash-keys graph)) graph)))
-	   ((null keys)
-	    nil)
-	   ((equal item (car keys))
-	    (gethash (car keys) graph))
-	   (t
-	    (graph-recurse item (cdr keys) graph)))))
-    (graph-recurse item (hash-keys graph) graph)))
+  (let ((found nil))
+    (labels
+	((exists-internal (item graph)
+	   (loop for k being each hash-key of graph
+	      do
+		(if (equal item k)
+		    (setf found (gethash k graph))
+		    (if (> (hash-key-count (gethash k graph)) 0)
+			(exists-internal item (gethash k graph)))))))
+      (exists-internal item graph)
+      found)))
   
 (defun add-to-graph (item parent graph)
   (let ((exists (exists-in-graph parent graph)))
-    (if exists
-	(setf (gethash item exists) (make-hash-table :test #'equal)))))
+    (when exists
+      (setf (gethash item exists) (make-hash-table :test #'equal)))))
 
 (defun build-graph (input)
   (let ((out-graph nil))
