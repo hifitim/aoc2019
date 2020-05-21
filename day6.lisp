@@ -92,7 +92,34 @@
 
 (defun hash-key-count (hash-table)
   (length (hash-keys hash-table)))
-       
+
+(defun remove-at (n lst)
+  (concatenate
+   'cons
+   (subseq lst 0 (- n 1))
+   (subseq lst n (length lst))))
+
+(defun insert-at (n item lst)
+  (concatenate
+   'cons
+   (subseq lst 0 n)
+   (list item)
+   (subseq lst n (length lst))))
+
+(defun order-input (input)
+  (let ((output nil))
+    (labels
+	((order-recurse (input next ordered-input)
+	   (cond
+	     ((null input)
+	      ordered-input)
+	     ((equal (caar input) "COM")
+	      (insert-at 0 (car input) ordered-input)
+	      (order-recurse (cdr input) (cdar input) ordered-input))
+	     
+      (order-recurse input output))
+    output))
+
 (defparameter *COM* (make-hash-table :test #'equal))
 (defun build-test ()
   (setf (gethash "B" *COM*) (make-hash-table :test #'equal))
@@ -100,4 +127,6 @@
   (setf (gethash "G" (gethash "B" *COM*)) (make-hash-table :test #'equal))
   (setf (gethash "H" (gethash "G" (gethash "B" *COM*))) (make-hash-table :test #'equal))
   (setf (gethash "Q" (gethash "B" *COM*)) (make-hash-table :test #'equal)))
-  
+
+(defun main ()
+  (order-input (sort (read-input "/home/tim/common-lisp/aoc2019/input_day6.txt") #'graph-sorter)))
