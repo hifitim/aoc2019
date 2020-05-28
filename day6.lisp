@@ -40,6 +40,28 @@
   (loop for i from 0 upto (* depth 2)
      do (format stream " ")))
 
+(defun find-last-common-node (seq1 seq2)
+  (let ((last-commmon nil))
+    (labels
+	((recur (seq1 seq2)
+	   (cond
+	     ((null seq1)
+	      last-commmon)
+	     ((and
+	       (not last-commmon)
+	       (find (car seq1) seq2 :test #'equal)
+	       (setf last-commmon (car seq1))))
+	     (t
+	      (recur (cdr seq1) seq2)))))
+      (recur (reverse seq1) (reverse seq2)))
+      last-commmon))
+
+(defun find-distance (chain1 chain2)
+  (let ((last-common-node (find-last-common-node chain1 chain2)))
+    (+
+     (- (length (subseq chain1 (position last-common-node chain1))) 1)
+     (- (length (subseq chain2 (position last-common-node chain2))) 1))))
+
 (defun count-orbits (graph)
   (let ((total 0))
     (labels
@@ -65,19 +87,25 @@
 
 (defun exists-in-graph (item graph)
   (let ((found nil)
-	(outer-depth 0))
+	(outer-depth 0)
+	(outer-chain nil))
     (labels
-	((exists-internal (item graph depth)
+	((exists-internal (item graph depth chain)
 	   (loop for k being each hash-key of graph
 	      do
 		(if (equal item k)
 		    (progn
 		      (setf found (gethash k graph))
-		      (setf outer-depth depth))
+		      (setf outer-depth depth)
+		      (setf outer-chain chain))    
 		    (when (> (hash-key-count (gethash k graph)) 0)
-		      (exists-internal item (gethash k graph) (+ depth 1)))))))
-      (exists-internal item graph 1))
-    (values found outer-depth)))
+		      (exists-internal
+		       item
+		       (gethash k graph)
+		       (+ depth 1)
+		       (concatenate 'cons chain (list k))))))))
+      (exists-internal item graph 1 nil))
+    (values found outer-depth outer-chain)))
   
 (defun add-to-graph (item parent graph)
   (let ((exists (exists-in-graph parent graph)))
@@ -129,7 +157,6 @@
 (defun hash-key-count (hash-table)
   (length (hash-keys hash-table)))
 
-
 (defun main-print ()
   (with-open-file (out-stream "C:\\Users\\a0232709\\common-lisp\\aoc2019\\day6_out.txt" :direction :output)
     (print-graph
@@ -141,3 +168,12 @@
   (setf *COM*
 	(count-orbits (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter)))))
 
+(defun main2()
+  (setf *COM*
+	(build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter)))
+  (multiple-value-bind (you-table you-depth you-chain)
+      (exists-in-graph "YOU" *COM*)
+    (multiple-value-bind (san-table san-depth san-chain)
+	(exists-in-graph "SAN" *COM*)
+      (find-distance you-chain san-chain))))
+			 
