@@ -1,3 +1,5 @@
+(Declaim (optimize (debug 3)))
+
 (defun read-input (file-name)
   (with-open-file (stream
 		   file-name
@@ -17,6 +19,7 @@
      collect (subseq string i j)
      while j))
 
+;; Sorts to alpha order, with COM as the first node.
 (defun graph-sorter (x y)
   (cond
     ((string-equal (car x) "COM")
@@ -33,20 +36,20 @@
 (defun print-hash-entry (key hash-table)
   (format t "key: ~A, value: ~A~%" key (gethash key hash-table)))
 
-(defun print-depth (depth)
+(defun print-depth (depth stream)
   (loop for i from 0 upto (* depth 2)
-     do (format t " ")))
+     do (format stream " ")))
 
-(defun print-graph (graph)
+(defun print-graph (graph stream)
   (labels
       ((print-internal (graph depth)
 	 (loop for k being each hash-key of graph
 	    do
-	      (print-depth depth)
-	      (format t "~A~%" k)
+	      (print-depth depth stream)
+	      (format stream "~A~%" k)
 	      (if (> (hash-key-count (gethash k graph)) 0)
 		  (print-internal (gethash k graph) (+ depth 1))))))
-    (print-internal graph 0)))
+    (print-internal graph 0)))    
 
 (defun exists-in-graph (item graph)
   (let ((found nil))
@@ -66,26 +69,44 @@
     (when exists
       (setf (gethash item exists) (make-hash-table :test #'equal)))))
 
+(defun find-orbiters (base input)
+  (remove-if-not
+   (lambda (x)
+     (equal (car x) base))
+   input))
+
+(defun remove-from-input (orbiters input)
+  (remove-if 
+   (lambda (x)
+     (let ((found nil))
+       (loop for item in orbiters
+	  do
+	    (if (equal item x)
+		(setf found t)))
+       found))
+   input))
+
 (defun build-graph (input)
-  (let ((out-graph nil))
+  (let ((output-graph (make-hash-table :test #'equal)))
     (labels
-	((build-recurse (input graph)
-	   (cond
-	     ((string-equal (caar input) "COM")
-	      (setf graph (make-hash-table :test #'equal))
-	      (setf (gethash (cdar input) graph) (make-hash-table :test #'equal))
-	      (build-recurse (cdr input) graph))
-	     ((null input)
-	      graph)
-	     (t
-	      (add-to-graph
-	       (cdar input)
-	       (caar input)
-	       graph)
-	      (build-recurse
-	       (cdr input)
-	       graph)))))
-	 (build-recurse input out-graph))))
+	((build-recurse (input next graph)
+	     (cond
+	       ((null input)
+		graph)
+	       ((equal (caar input) "COM")
+		(setf (gethash (cdar input) graph) (make-hash-table :test #'equal))
+		(build-recurse (cdr input) (cdar input) graph))
+	       (t
+		(let* ((orbiters (find-orbiters next input)))
+		  (loop for o in orbiters
+		     do
+		       (add-to-graph (cdr o) (car o) graph)
+		       (build-recurse
+			(remove-from-input orbiters input)
+			(cdr o)
+			graph)))))))
+      (build-recurse input nil output-graph))
+    output-graph))
 
 (defun hash-keys (hash-table)
   (loop for key being the hash-keys of hash-table collect key))
@@ -93,40 +114,11 @@
 (defun hash-key-count (hash-table)
   (length (hash-keys hash-table)))
 
-(defun remove-at (n lst)
-  (concatenate
-   'cons
-   (subseq lst 0 (- n 1))
-   (subseq lst n (length lst))))
+(defun main-print ()
+  (with-open-file (out-stream "C:\\Users\\a0232709\\common-lisp\\aoc2019\\day6_out.txt" :direction :output)
+    (print-graph
+     (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter))
+     out-stream)))
 
-(defun insert-at (n item lst)
-  (concatenate
-   'cons
-   (subseq lst 0 n)
-   (list item)
-   (subseq lst n (length lst))))
-
-(defun order-input (input)
-  (let ((output nil))
-    (labels
-	((order-recurse (input next ordered-input)
-	   (cond
-	     ((null input)
-	      ordered-input)
-	     ((equal (caar input) "COM")
-	      (insert-at 0 (car input) ordered-input)
-	      (order-recurse (cdr input) (cdar input) ordered-input))
-	     
-      (order-recurse input output))
-    output))
-
-(defparameter *COM* (make-hash-table :test #'equal))
-(defun build-test ()
-  (setf (gethash "B" *COM*) (make-hash-table :test #'equal))
-  (setf (gethash "C" (gethash "B" *COM*)) (make-hash-table :test #'equal))
-  (setf (gethash "G" (gethash "B" *COM*)) (make-hash-table :test #'equal))
-  (setf (gethash "H" (gethash "G" (gethash "B" *COM*))) (make-hash-table :test #'equal))
-  (setf (gethash "Q" (gethash "B" *COM*)) (make-hash-table :test #'equal)))
-
-(defun main ()
-  (order-input (sort (read-input "/home/tim/common-lisp/aoc2019/input_day6.txt") #'graph-sorter)))
+(defun main()
+  (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter)))
