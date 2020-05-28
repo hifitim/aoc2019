@@ -40,6 +40,18 @@
   (loop for i from 0 upto (* depth 2)
      do (format stream " ")))
 
+(defun count-orbits (graph)
+  (let ((total 0))
+    (labels
+	((count-internal (graph depth)
+	   (loop for k being each hash-key of graph
+	      do
+		(setf total (+ total depth))
+		(if (> (hash-key-count (gethash k graph)) 0)
+		    (count-internal (gethash k graph) (+ depth 1))))))
+      (count-internal graph 1))
+    total))
+
 (defun print-graph (graph stream)
   (labels
       ((print-internal (graph depth)
@@ -52,17 +64,20 @@
     (print-internal graph 0)))    
 
 (defun exists-in-graph (item graph)
-  (let ((found nil))
+  (let ((found nil)
+	(outer-depth 0))
     (labels
-	((exists-internal (item graph)
+	((exists-internal (item graph depth)
 	   (loop for k being each hash-key of graph
 	      do
 		(if (equal item k)
-		    (setf found (gethash k graph))
-		    (if (> (hash-key-count (gethash k graph)) 0)
-			(exists-internal item (gethash k graph)))))))
-      (exists-internal item graph)
-      found)))
+		    (progn
+		      (setf found (gethash k graph))
+		      (setf outer-depth depth))
+		    (when (> (hash-key-count (gethash k graph)) 0)
+		      (exists-internal item (gethash k graph) (+ depth 1)))))))
+      (exists-internal item graph 1))
+    (values found outer-depth)))
   
 (defun add-to-graph (item parent graph)
   (let ((exists (exists-in-graph parent graph)))
@@ -114,11 +129,15 @@
 (defun hash-key-count (hash-table)
   (length (hash-keys hash-table)))
 
+
 (defun main-print ()
   (with-open-file (out-stream "C:\\Users\\a0232709\\common-lisp\\aoc2019\\day6_out.txt" :direction :output)
     (print-graph
      (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter))
      out-stream)))
 
-(defun main()
-  (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter)))
+(defparameter *COM* (make-hash-table :test #'equal))
+(defun main1()
+  (setf *COM*
+	(count-orbits (build-graph (sort (read-input "C:\\Users\\a0232709\\common-lisp\\aoc2019\\input_day6.txt") #'graph-sorter)))))
+
